@@ -12,19 +12,8 @@ from email.mime.text        import MIMEText
 from fy_os                  import FY_Touch
 from fy_os                  import FY_Append_To_Txt_File
 from fy_os                  import FY_Delete_File
+from fy_os                  import FY_Create_Dir
 
-"""****************************************************************************
-*******************************************************************************
-****************************************************************************"""
-def FY_IsWindows():
-
-	_state = False
-
-	if os.name == 'nt':
-
-		_state = True
-
-	return _state
 
 """****************************************************************************
 *******************************************************************************
@@ -91,26 +80,49 @@ class FY_Logger(object):
         if not os.path.exists(self.__path):
             FY_Touch(self.__path)
 
+    def __is_log_level(self,level):
+
+        _log = False
+
+        if self.__level == "debug":
+            _log = True
+        else:
+            if self.__level == 'error':
+                if level == 'info' or level == 'warning' or level == 'error':
+                    _log = True
+            else:
+                if self.__level == 'warning':
+                    if level == 'info' or level == 'warning':
+                        _log = True
+                else:
+                    if self.__level == 'info':
+                        if level == 'info':
+                            _log = True
+        return _log
+
     def __log(self,txt,level):
 
-        _date    = datetime.now().strftime("%I:%M:%S %p %d-%B-%Y")
+        if self.__is_log_level(level):
 
-        _log_txt = "[%s] [%s]      -> %s" % (_date,level.upper(),txt)
+            _date    = datetime.now().strftime("%I:%M:%S %p %d-%B-%Y")
 
-        if self.__console:
-            sys.stdout.write(_log_txt + "\n")
+            _log_txt = "[%s] [%s]      -> %s" % (_date,level.upper(),txt)
 
-        self.__log_to_file(_log_txt + "\n")
+            if self.__console:
+
+                sys.stdout.write(_log_txt + "\n")
+
+            self.__log_to_file(_log_txt + "\n")
 
     def __log_to_file(self,txt):
 
         #in case the log file is to big we will archive it
-        if self._is_log_to_big():
-            self._archive_log()
+        if self.__is_log_to_big():
+            self.__archive_log()
 
         FY_Append_To_Txt_File(self.__path,txt)
 
-    def _is_log_to_big(self):
+    def __is_log_to_big(self):
         _is_big = False
 
         #check if file is larger then 50MB
@@ -119,12 +131,12 @@ class FY_Logger(object):
 
         return _is_big
 
-    def _archive_log(self):
+    def __archive_log(self):
         
         _archive_path = os.path.join(os.path.split(self.__path)[0],"freya_log_archive")
 
         if not os.path.exists(_archive_path):
-            os.makedirs(_archive_path)
+            FY_Create_Dir(_archive_path)
 
         _name = "freya_log_%s" % (self.__name,)
 

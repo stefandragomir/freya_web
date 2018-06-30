@@ -1,77 +1,77 @@
 import os
 import shutil
+import shlex
 
-from fy_err import FY_Err_Copy_File
-from fy_err import FY_Err_Move_File
-from fy_err import FY_Err_Delete_File
-from fy_err import FY_Err_Copy_Dir
-from fy_err import FY_Err_Move_Dir
-from fy_err import FY_Err_Delete_Dir
-from fy_err import FY_Err_Breakeup_Path
+from fy_err  import FY_Err_Copy_File
+from fy_err  import FY_Err_Move_File
+from fy_err  import FY_Err_Delete_File
+from fy_err  import FY_Err_Copy_Dir
+from fy_err  import FY_Err_Move_Dir
+from fy_err  import FY_Err_Delete_Dir
+from fy_err  import FY_Err_Breakeup_Path
+from fy_err  import FY_Err_Call_Process
+from fy_err  import FY_Err_Append_To_Txt_File
+from fy_err  import FY_Err_Read_Txt_File
+from fy_err  import FY_Err_Write_Txt_File
+from fy_err  import FY_Err_Read_Binary_File
+from fy_err  import FY_Err_Write_Binary_File
+from fy_err  import FY_Err_Touch
+from fy_util import FY_IsWindows
 
 """****************************************************************************
 *******************************************************************************
 ****************************************************************************"""
 class FY_Process(object):
 
-    error = PGB_ERROR.ALL_OK
     _log   = None
 
-    def __init__(self, cwd, user, logger)
-        self.error     = PGB_ERROR.ALL_OK
-        self._log      = log
+    def __init__(self, cwd, user, logger):
 
-    def get_env(self):
+        self.__cwd    = cwd
+        self.__user   = user
+        self.__logger = logger
+
+    def __get_env(self):
 
         _env = os.environ.copy()
 
         return _env
 
-    def get_command(self,command,user):
+    def __get_command(self,cmd):
+        
+        if FY_IsWindows():
+            pass
+        else:
+
+            cmd = shlex.split(cmd)
+
+            if user != None:
+
+                cmd = ["sudo", "-u", self.__user] + cmd
+
+        return cmd
+
+    def __check_reponse(self,_std_out,std_err):
         """
-        Prepare command for execution
+        Check if response contains errors
         """
-        # on windows we can pass the comand as a single string because cmd.exe will interpret the string
-        # on UNIX systems we have two choices we use shell=True(which we will never use) so we must specify each argument with shlex
-        if os.name != 'nt':
 
-            command = shlex.split(command)
+        pass
 
-            if user != '':
-                #see ticket #131
-                command = ["sudo", "-u", user] + command
-                #command = command
-
-        return command
-
-    def check_reponse(self,std_err,user):
-        """
-        Check if response contains Linux errors
-        """
-        self.error = PGB_ERROR.ALL_OK
-
-        if re.match("Sorry, user",std_err) != None:
-            self.error = PGB_ERROR.ERROR_COULD_EXEC_CMD_USER
-            if self._log != None:
-                self._log.error(self.error,"The user %s does not have access to execute this command" % (user,))
-
-        return self.error
-
-    def call(self,command,cwd="",user='pgb'):
-
-        self.error = PGB_ERROR.ALL_OK
+    def call(self,cmd):
 
         _std_out = ""
         _std_err = ""
-        command = self.get_command(command,user)
 
-        if self._log != None:
-            self._log.debug("CMD CWD: %s" % (cwd,))
-            self._log.debug("CMD    : %s" % (str(command),))
+        cmd = self.__get_command(cmd)
+
+        if self.__logger != None:
+            self.__logger.debug("CMD CWD: %s" % (self.__cwd,))
+            self.__logger.debug("CMD    : %s" % (str(cmd),))
 
         try:
             _proc = Popen(
-                            command,
+                            cmd,
                             bufsize=0,
                             executable=None, 
                             stdin=None, 
@@ -80,21 +80,23 @@ class FY_Process(object):
                             preexec_fn=None, 
                             close_fds=False, 
                             shell=False, 
-                            cwd=cwd, 
-                            env=self.get_env(),
+                            cwd=self.__cwd, 
+                            env=self.__get_env(),
                             universal_newlines=False, 
                             startupinfo=None, 
                             creationflags=0)
         except:
-            self.error = PGB_ERROR.ERROR_COULD_NOT_EXECUTE_CMD
-            if self._log != None:
-                self._log.error(self.error,"Could not execute command [%s] at cwd [%s]" % (command,cwd))
 
-        if PGB_ERROR.ALL_OK == self.error:
-            _std_out, _std_err = _proc.communicate()
-            self.error = self.check_reponse(_std_err,user)
+            raise FY_Err_Call_Process
 
-        return self.error, _std_out, _std_err
+            if self.__logger != None:
+                self.__logger.error("Could not execute command [%s] at cwd [%s]" % (cmd,self.__cwd))
+
+        _std_out, _std_err = _proc.communicate()
+
+        self.__check_reponse(_std_out,_std_err)
+
+        return _std_out, _std_err
 
 """****************************************************************************
 *******************************************************************************
@@ -228,82 +230,61 @@ class FY_AccessRights(object):
 
     def set_object_owner(self,path,new_owner):
 
-         _cwd  = os.path.split(path)[0]
-         _proc = FY_Process(cwd=_cwd,user=None,logger=self.__logger)
-
-        _std_out, _std_err = _proc.call(cmd="chown %s %s" % (new_owner,path))
+        if FY_IsWindows():
+            pass
+        else:
+            _cwd  = os.path.split(path)[0]
+            _proc = FY_Process(cwd=_cwd,user=None,logger=self.__logger)
+            _std_out, _std_err = _proc.call(cmd="chown %s %s" % (new_owner,path))
 
     def set_object_group(self,path,new_group):
 
-        _error = PGB_ERROR.ALL_OK
-
-        _cwd = os.path.split(path)[0]
-
-        _error, _std_out, _std_err = self.__proc.call(
-                                                        command="chgrp %s %s" % (new_group,path), 
-                                                        cwd=_cwd, 
-                                                        user=cmd_owner)
-
-        return _error
+        if FY_IsWindows():
+            pass
+        else:
+            _cwd  = os.path.split(path)[0]
+            _proc = FY_Process(cwd=_cwd,user=None,logger=self.__logger)
+            _std_out, _std_err = _proc.call(cmd="chgrp %s %s" % (new_group,path))
 
     def set_object_mode(self,path,mode):
 
-        _error = PGB_ERROR.ALL_OK
-
-        _cwd = os.path.split(path)[0]
-
-        _error, _std_out, _std_err = self.__proc.call(
-                                                        command="chmod %s %s" % (mode,path),
-                                                        cwd=_cwd,
-                                                        user=cmd_owner)
-
-        return _error
+        if FY_IsWindows():
+            pass
+        else:
+            _cwd  = os.path.split(path)[0]
+            _proc = FY_Process(cwd=_cwd,user=None,logger=self.__logger)
+            _std_out, _std_err = _proc.call(cmd="chmod %s %s" % (mode,path))
 
     def set_object_owner_r(self,path,new_owner):
 
-        _error = PGB_ERROR.ALL_OK
-
-        _cwd = os.path.split(path)[0]
-
-        _error, _std_out, _std_err = self.__proc.call(
-                                                        command="chown -R %s %s" % (new_owner,path), 
-                                                        cwd=_cwd, 
-                                                        user=cmd_owner)
-
-        return _error
+        if FY_IsWindows():
+            pass
+        else:
+            _cwd  = os.path.split(path)[0]
+            _proc = FY_Process(cwd=_cwd,user=None,logger=self.__logger)
+            _std_out, _std_err = _proc.call(cmd="chown -R %s %s" % (new_owner,path))
 
     def set_object_group_r(self,path,new_group):
 
-        _error = PGB_ERROR.ALL_OK
-
-        _cwd = os.path.split(path)[0]
-
-        _error, _std_out, _std_err = self.__proc.call(
-                                                        command="chgrp -R %s %s" % (new_group,path), 
-                                                        cwd=_cwd, 
-                                                        user=cmd_owner)
-
-        return _error
+        if FY_IsWindows():
+            pass
+        else:
+            _cwd  = os.path.split(path)[0]
+            _proc = FY_Process(cwd=_cwd,user=None,logger=self.__logger)
+            _std_out, _std_err = _proc.call(cmd="chgrp -R %s %s" % (new_group,path))
 
     def set_object_mode_r(self,path,mode):
 
-        _error = PGB_ERROR.ALL_OK
-
-        _cwd = os.path.split(path)[0]
-
-        _error, _std_out, _std_err = self.__proc.call(
-                                                        command="chmod -R %s %s" % (mode,path),
-                                                        cwd=_cwd,
-                                                        user=cmd_owner)
-
-        return _error
+        if FY_IsWindows():
+            pass
+        else:
+            _cwd  = os.path.split(path)[0]
+            _proc = FY_Process(cwd=_cwd,user=None,logger=self.__logger)
+            _std_out, _std_err = _proc.call(cmd="chmod -R %s %s" % (mode,path))
 
     def set_dir_ac(self,path,owner,group,mode):
 
-        _error = PGB_ERROR.ALL_OK
-
         _comps = list(os.walk(path))
-
 
         for _path, _dirs, _files in reversed(_comps):
 
@@ -312,69 +293,113 @@ class FY_AccessRights(object):
 
                 _file_path = os.path.join(_path,_file)
 
-                if PGB_ERROR.ALL_OK == _error:
+                self.set_object_mode(_file_path,mode)
 
-                    _error = self.set_object_mode(_file_path,cmd_owner,mode)
+                self.set_object_owner(_file_path,owner)
 
-                    if PGB_ERROR.ALL_OK == _error:
-
-                        _error = self.set_object_owner(_file_path,cmd_owner,owner)
-
-                        if PGB_ERROR.ALL_OK == _error:
-
-                            _error = self.set_object_group(_file_path,cmd_owner,group)
+                self.set_object_group(_file_path,group)
 
             #for all dirs
             for _dir in _dirs:
 
                 _dir_path = os.path.join(_path,_dir)
 
-                if PGB_ERROR.ALL_OK == _error:
+                self.set_object_mode(_dir_path,mode)
 
-                    _error = self.set_object_mode(_dir_path,cmd_owner,mode)
+                self.set_object_owner(_dir_path,owner)
 
-                    if PGB_ERROR.ALL_OK == _error:
-
-                        _error = self.set_object_owner(_dir_path,cmd_owner,owner)
-
-                        if PGB_ERROR.ALL_OK == _error:
-
-                            _error = self.set_object_group(_dir_path,cmd_owner,group)
-
-        return _error
+                self.set_object_group(_dir_path,group)
 
     def set_dir_ac_r(self,path,owner,group,mode):
 
-        _error = PGB_ERROR.ALL_OK
+        self.set_object_mode_r(path,cmd_owner,mode)
 
+        self.set_object_owner_r(path,cmd_owner,owner)
 
-        _error = self.set_object_mode_r(path,cmd_owner,mode)
-
-        if PGB_ERROR.ALL_OK == _error:
-
-            _error = self.set_object_owner_r(path,cmd_owner,owner)
-
-            if PGB_ERROR.ALL_OK == _error:
-
-                _error = self.set_object_group_r(path,cmd_owner,group)
-
-
-        return _error
+        self.set_object_group_r(path,cmd_owner,group)
 
     def set_file_ac(self,path,owner,group,mode):
 
-        _error = PGB_ERROR.ALL_OK
+        self.set_object_mode(path,cmd_owner,mode)
 
-        if PGB_ERROR.ALL_OK == _error:
+        self.set_object_owner(path,cmd_owner,owner)
 
-            _error = self.set_object_mode(path,cmd_owner,mode)
+        self.set_object_group(path,cmd_owner,group)
 
-            if PGB_ERROR.ALL_OK == _error:
+"""****************************************************************************
+*******************************************************************************
+****************************************************************************"""
+def FY_Touch(path):
 
-                _error = self.set_object_owner(path,cmd_owner,owner)
+    try:
+        with open(path,'w+') as _file:
 
-                if PGB_ERROR.ALL_OK == _error:
+            _file.write("")
+    except:
+        raise FY_Err_Touch
 
-                    _error = self.set_object_group(path,cmd_owner,group)
+"""****************************************************************************
+*******************************************************************************
+****************************************************************************"""
+def FY_Write_Txt_File(path,data):
 
-        return _error
+    try:
+        with open(path,'w+') as _file:
+
+            _file.write(data)
+    except:
+        raise FY_Err_Write_Txt_File
+
+"""****************************************************************************
+*******************************************************************************
+****************************************************************************"""
+def FY_Write_Binary_File(path,data):
+
+    try:
+        with open(path,'wb') as _file:
+
+            _file.write(data)
+    except:
+        raise FY_Err_Write_Binary_File
+
+"""****************************************************************************
+*******************************************************************************
+****************************************************************************"""
+def FY_Read_Txt_File(path):
+    _data = ""
+
+    try:
+        with open(path,'r') as _file:
+
+            _data = _file.read()
+    except:
+        raise FY_Err_Read_Txt_File
+
+    return _data
+
+"""****************************************************************************
+*******************************************************************************
+****************************************************************************"""
+def FY_Append_To_Txt_File(path,data):
+    try:
+        with open(path,'a') as _file:
+
+            _file.write(data)
+    except:
+        raise FY_Err_Append_To_Txt_File
+
+"""****************************************************************************
+*******************************************************************************
+****************************************************************************"""
+def FY_Read_Binary_File(path):
+
+    _data = ""
+
+    try:
+        with open(path,'rb') as _file:
+
+            _data = _file.read()
+    except:
+        raise FY_Err_Read_Binary_File
+
+    return _data

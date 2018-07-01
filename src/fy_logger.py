@@ -48,7 +48,7 @@ class FY_Notifications(object):
 
         except:
 
-        	raise FY_Err_Send_Email
+            raise FY_Err_Send_Email
 
             if self.__logger != None:
 
@@ -66,14 +66,15 @@ class FY_Logger(object):
      - debug
     """
 
-    def __init__(self, name="", console=True, path, level='info'):
+    def __init__(self, name="", console=True, path="", level='info',max_size="50000000"):
 
         self.__console     = console
         self.__path        = path
         self.__level       = level
         self.__name        = name
+        self.__max_size    = max_size
 
-        _file_name = "freya_%s.log" % (name,)
+        _file_name = "%s.log" % (name,)
 
         self.__path  = os.path.join(self.__path,_file_name)
 
@@ -126,7 +127,7 @@ class FY_Logger(object):
         _is_big = False
 
         #check if file is larger then 50MB
-        if os.path.getsize(self.__path) >= 34000000:
+        if os.path.getsize(self.__path) >= int(self.__max_size):
             _is_big = True
 
         return _is_big

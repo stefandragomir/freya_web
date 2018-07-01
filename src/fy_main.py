@@ -1,149 +1,187 @@
 import os
 
-from fy_args import FY_Arguments
-from fy_os   import FY_Create_Dir
-from fy_os   import FY_Read_Txt_File
-from fy_os   import FY_Write_Txt_File
+from fy_args   import FY_Arguments
+from fy_os     import FY_Create_Dir
+from fy_os     import FY_Read_Txt_File
+from fy_os     import FY_Write_Txt_File
+from fy_os     import FY_Delete_File
+from fy_err    import FY_Err_Env_Inconsistent
+from fy_err    import FY_Err_Env_Exists
+from fy_err    import FY_Err_Env_Lock
+from fy_logger import FY_Logger
+from fy_config import FY_Config
+
 
 """****************************************************************************
 *******************************************************************************
 ****************************************************************************"""
 class FY_Environment(object):
 
-	def __init__(self,cwd):
-		"""
-		Description:
-			Constructor for the Freya environment object
-			This class will contain all paths to all files needed by freya from an environment
-			This class will also contain the methods for:
-				- creating an environment
-				- checking if an environment is ok
-				- loading an environment
-		Args:
-	        path (string): path to the folder where the environment is or will be 
+    def __init__(self):
 
-    	Returns:
-        	nothing
-		"""
+        self.cwd           = os.getcwd()
+        self.name          = ""
+        self.path          = ""
+        self.path_lock     = ""
+        self.path_config   = ""
+        self.path_log      = ""
+        self.config        = None
+        self.logger        = None
 
-		self.__cwd           = os.getcwd()
-		self.__name          = None
-		self.__path          = None
-		self.__path_pid      = None
-		self.__path_config   = None
-		self.__path_log      = None
+    def __check_env(self):
+        
+        if not os.path.exists(self.path):
+            raise FY_Err_Env_Inconsistent("Environment path does not exist")
 
-		self.__paths_configs = []
-		self.__paths_logs    = []
+        if not os.path.exists(self.path_config):
+            raise FY_Err_Env_Inconsistent("Environment configuration path does not exist")
 
-	def __check_env(self):
+        if not os.path.exists(self.path_log):
+            raise FY_Err_Env_Inconsistent("Environment log path does not exist")
 
-		pass
+        self.__get_lock()
 
-	def create_env(self,name):
-		"""
-		Description:
-			Method that will create a fresh environment
+    def __get_lock(self):
 
-		Args:
-	        name (string): name of the environment
+        if not self.__is_lock():        
+            FY_Write_Txt_File(self.path_lock, str(os.getpid()))
+        else:
+            _pid = FY_Read_Txt_File(self.path_lock)
+            raise FY_Err_Env_Lock("Another process is using this environment with PID [%s]" % (_pid))
 
-    	Returns:
-        	nothing
-		"""
+    def __is_lock(self):
 
-		self.__path = os.path.join(self.__cwd,name)
+        return os.path.exists(self.path_lock )
 
-		#check if and environment with this name exists
-		if os.path.exists(self.__path):
-			
+    def __release_lock(self):
 
-		#create the environment folder
-		self.__name = name
+        _locked = self.__is_lock()
 
+        if __locked:        
 
-		#create configuration folder and store path
-		self.__path_config   = os.path.join(self.__path,'config')
-		FY_Create_Dir(self.__path_config)
+            FY_Delete_File(self.path_lock)
 
-		#create pid file and store path
-		self.__path_pid      = os.path.join(self.__path,'freya.pid')
-		FY_Write_Txt_File(self.__path_pid, str(os.getpid()))
+    def __load_paths(self,name):
 
-		#create log folder and store path
-		self.__path_log      = os.path.join(self.__path,'log')
-		FY_Create_Dir(self.__path_log)
+        self.name          = name
+        self.path          = os.path.join(self.cwd,name)
+        self.path_config   = os.path.join(self.path,'config')
+        self.path_log      = os.path.join(self.path,'log')
+        self.path_lock     = os.path.join(self.path,'freya.lock')
 
-		#create default configuration file and store path
-		self.__paths_configs = [os.path.join(self.__path_config,"default.config")]
+    def __unload_paths(self):
 
-		_path_default_config = os.path.split(__file__)[0]
-		_path_default_config = os.path.join(_path_default_config,'default.config')
+        self.name          = ""
+        self.path          = ""
+        self.path_config   = ""
+        self.path_log      = ""
+        self.path_lock     = ""
 
-		_default_config = FY_Read_Txt_File(_path_default_config)
-		FY_Write_Txt_File(self.__paths_configs[0], _default_config)
+    def create(self,name):
+        
+        self.__load_paths(name)
 
-	def load_env(self):
+        #check if and environment with this name exists
+        if os.path.exists(self.path):
+            raise FY_Err_Env_Exists("Environment %s already exists" % (self.name,))         
 
-		pass
+        #create the environment folder      
+        FY_Create_Dir(self.path)
+
+        #create configuration folder
+        FY_Create_Dir(self.path_config)
+
+        #create log folder
+        FY_Create_Dir(self.path_log)
+
+        #create default configuration file and store path
+        _paths_config = os.path.join(self.path_config,"default.config")
+
+        _path_default_config = os.path.split(__file__)[0]
+        _path_default_config = os.path.join(_path_default_config,'default.config')
+
+        _default_config = FY_Read_Txt_File(_path_default_config)
+        FY_Write_Txt_File(_paths_config, _default_config)
+
+    def load(self,name):
+
+        #load all paths except the configuration files
+        self.__load_paths(name)
+
+        #check if the environment is consistent
+        self.__check_env()
+
+        #load the configuration files
+        self.config = FY_Config(self.path_config)
+        self.config.load()
+
+        #create the log file
+        self.logger = FY_Logger(
+                                name='freya',
+                                console=True,
+                                path=self.path_log,
+                                level=self.config.logger.level,
+                                max_size=self.config.logger.max_size)
+
+        #lock the environment
+        self.__path_lock = os.path.join(self.path,'freya.pid')
+        
+
+    def unload(self):
+
+        self.config = None
+        self.logger = None
+
+        self.__release_lock()
+
+        self.__unload_paths()
 
 """****************************************************************************
 *******************************************************************************
 ****************************************************************************"""
 class Freya(object):
 
-	def __init__(self):
-		"""
-		Description:
-			Main class for the Freya Web Server
-			It will interpret the command line parameters and execute them
-		
-		Args:
-	        none
+    def __init__(self):
 
-    	Returns:
-        	nothing
-		"""
+        self.__env = FY_Environment()
 
-		self.__env = FY_Environment()
+    def run(self):
 
-	def run(self):
+        _args = FY_Arguments().get_arguments()
 
-		_args = FY_Arguments().get_arguments()
+        if _args.start != None:
+            self.__start(_args.start)
 
-		if _args.start != None:
-			self.__start(self.__env)
+        if _args.stop != None:
+            self.__stop(_args.stop)
 
-		if _args.stop != None:
-			self.__stop(self.__env)
+        if _args.restart != None:
+            self.__restart(_args.restart)
 
-		if _args.restart != None:
-			self.__restart(self.__env)
+        if _args.createenv != None:
+            self.__create_env(_args.createenv)
 
-		if _args.createenv != None:
-			self.__create_env(self.__env,_args.createenv)
+    def __create_env(self,name):
 
-	def __create_env(self,env):
+        self.__env.create(name)
 
-		self.__env.create_env()
+    def __start(self,name):
 
-	def __start(self,env):
+        self.__env.load(name)
 
-		pass
+    def __stop(self,name):
 
-	def __stop(self,env):
+        self.__env.load(name)
 
-		pass
+    def __restart(self,name):
 
-	def __restart(self,env):
+        self.__stop(name)
 
-		self.__stop(env)
-
-		self.__start(env)
+        self.__start(name)
 
 """****************************************************************************
 *******************************************************************************
 ****************************************************************************"""
 if __name__ == "__main__":
 
-	Freya().run()
+    Freya().run()

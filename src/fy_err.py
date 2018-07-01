@@ -63,3 +63,16 @@ class FY_Err_Send_Email(Exception):
 """****************************************************************************
 *******************************************************************************
 ****************************************************************************"""
+"""
+Environment Exceptions
+"""
+
+class FY_Err_Env_Exists(Exception):
+    pass
+
+class FY_Err_Env_Inconsistent(Exception):
+    pass
+
+
+class FY_Err_Env_Lock(Exception):
+    pass

@@ -109,9 +109,11 @@ class FY_Logger(object):
 
             _log_txt = "[%s] [%s]      -> %s" % (_date,level.upper(),txt)
 
+            _log_txt_console = " -> %s" % (txt,)
+
             if self.__console:
 
-                sys.stdout.write(_log_txt + "\n")
+                sys.stdout.write(_log_txt_console + "\n")
 
             self.__log_to_file(_log_txt + "\n")
 

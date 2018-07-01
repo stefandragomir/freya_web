@@ -169,9 +169,17 @@ class Freya(object):
 
         self.__env.load(name)
 
+        self.__env.logger.info("Starting Freya Server...")
+
+        self.__env.logger.info("Done")
+
     def __stop(self,name):
 
         self.__env.load(name)
+
+        self.__env.logger.info("Stopping Freya Server...")
+
+        self.__env.logger.info("Done")
 
     def __restart(self,name):
 

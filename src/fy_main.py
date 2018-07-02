@@ -10,6 +10,7 @@ from fy_err    import FY_Err_Env_Exists
 from fy_err    import FY_Err_Env_Lock
 from fy_logger import FY_Logger
 from fy_config import FY_Config
+from fy_com    import FY_Com
 
 
 """****************************************************************************
@@ -170,6 +171,10 @@ class Freya(object):
         self.__env.load(name)
 
         self.__env.logger.info("Starting Freya Server...")
+        
+        _com = FY_Com(self.__env)
+        print(_com)
+        _com.start()
 
         self.__env.logger.info("Done")
 

@@ -29,6 +29,26 @@ class _FY_Config_Logger(object):
 """****************************************************************************
 *******************************************************************************
 ****************************************************************************"""
+class _FY_Config_Socket(object):
+
+    def __init__(self):
+
+        self.host            = None
+        self.port            = None
+        self.max_connections = None
+
+"""****************************************************************************
+*******************************************************************************
+****************************************************************************"""
+class _FY_Config_Host(object):
+
+    def __init__(self):
+        self.name     = ""
+        self.socket   = _FY_Config_Socket()
+
+"""****************************************************************************
+*******************************************************************************
+****************************************************************************"""
 
 class FY_Config(object):
 
@@ -38,6 +58,7 @@ class FY_Config(object):
         self.__paths_configs = []
         self.notifications   = _FY_Config_Notifications()
         self.logger          = _FY_Config_Logger()
+        self.hosts           = []
 
     def __get_config_files(self):
 
@@ -98,6 +119,41 @@ class FY_Config(object):
         else:
             raise FY_Err_Config("Missing configuration: logger")
 
+    def __load_hosts(self,data):
+
+        if 'hosts' in data.keys():
+
+            if len(data['hosts']) > 0:
+
+                for _host_name in data['hosts']:
+
+                    self.hosts.append(_FY_Config_Host())
+
+                    self.hosts[-1].name = _host_name
+
+                    if 'socket' in data['hosts'][_host_name].keys():
+
+                        if 'max_connection' in data['hosts'][_host_name]['socket']:
+                            self.hosts[-1].socket.max_connection = data['hosts'][_host_name]['socket']['max_connection']
+                        else:
+                            raise FY_Err_Config("Missing configuration: hosts->host->socket->max_connection")
+
+                        if 'host' in data['hosts'][_host_name]['socket']:
+                            self.hosts[-1].socket.max_connection = data['hosts'][_host_name]['socket']['host']
+                        else:
+                            raise FY_Err_Config("Missing configuration: hosts->host->socket->host")
+
+                        if 'port' in data['hosts'][_host_name]['socket']:
+                            self.hosts[-1].socket.max_connection = data['hosts'][_host_name]['socket']['port']
+                        else:
+                            raise FY_Err_Config("Missing configuration: hosts->host->socket->port")
+                    else:
+                        raise FY_Err_Config("Missing configuration: hosts->host->socket")            
+            else:
+                raise FY_Err_Config("Missing configuration: hosts->host")
+        else:
+            raise FY_Err_Config("Missing configuration: hosts")
+
     def load(self):
 
         _data = {}
@@ -118,6 +174,7 @@ class FY_Config(object):
 
         self.__load_logger(_data)
         self.__load_notifications(_data)
+        self.__load_hosts(_data)
 
         
 

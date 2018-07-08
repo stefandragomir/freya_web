@@ -43,12 +43,13 @@ class FY_Environment(object):
         self.__get_lock()
 
     def __get_lock(self):
+        pass
 
-        if not self.__is_lock():        
-            FY_Write_Txt_File(self.path_lock, str(os.getpid()))
-        else:
-            _pid = FY_Read_Txt_File(self.path_lock)
-            raise FY_Err_Env_Lock("Another process is using this environment with PID [%s]" % (_pid))
+        # if not self.__is_lock():        
+        #     FY_Write_Txt_File(self.path_lock, str(os.getpid()))
+        # else:
+        #     _pid = FY_Read_Txt_File(self.path_lock)
+        #     raise FY_Err_Env_Lock("Another process is using this environment with PID [%s]" % (_pid))
 
     def __is_lock(self):
 

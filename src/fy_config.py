@@ -15,6 +15,26 @@ class _FY_Config_Notifications(object):
         self.cc        = []
         self.bcc       = []
 
+
+    def __print(self):
+
+        _txt = ""
+        _txt += "HOST     : %s\n" % (self.host,)
+        _txt += "PORT     : %s\n" % (self.port,)
+        _txt += "RECEIVERS: %s\n" % (self.receivers,)
+        _txt += "CC       : %s\n" % (self.cc,)
+        _txt += "BCC      : %s\n" % (self.bcc,)
+
+        return _txt
+
+    def __str__(self):
+
+        return self.__print()
+
+    def __repr__(self):
+
+        return self.__print()
+
 """****************************************************************************
 *******************************************************************************
 ****************************************************************************"""
@@ -25,6 +45,23 @@ class _FY_Config_Logger(object):
         self.use      = False
         self.max_size = ""
         self.level    = ""
+
+    def __print(self):
+
+        _txt = ""
+        _txt += "USE        : %s\n" % (self.use,)
+        _txt += "MAX SIZE   : %s\n" % (self.max_size,)
+        _txt += "LEVEL      : %s\n" % (self.level,)
+
+        return _txt
+
+    def __str__(self):
+
+        return self.__print()
+
+    def __repr__(self):
+
+        return self.__print()
 
 """****************************************************************************
 *******************************************************************************
@@ -37,14 +74,48 @@ class _FY_Config_Socket(object):
         self.port            = None
         self.max_connections = None
 
+    def __print(self):
+
+        _txt = ""
+        _txt += "HOST   : %s\n" % (self.host,)
+        _txt += "PORT   : %s\n" % (self.port,)
+        _txt += "MAX CON: %s\n" % (self.max_connections,)
+
+        return _txt
+
+    def __str__(self):
+
+        return self.__print()
+
+    def __repr__(self):
+
+        return self.__print()
+
 """****************************************************************************
 *******************************************************************************
 ****************************************************************************"""
 class _FY_Config_Host(object):
 
     def __init__(self):
+
         self.name     = ""
         self.socket   = _FY_Config_Socket()
+
+    def __print(self):
+
+        _txt = ""
+        _txt += "HOST NAME: %s\n" % (self.name,)
+        _txt += str(self.socket)
+
+        return _txt
+
+    def __str__(self):
+
+        return self.__print()
+
+    def __repr__(self):
+
+        return self.__print()
 
 """****************************************************************************
 *******************************************************************************
@@ -176,7 +247,31 @@ class FY_Config(object):
         self.__load_notifications(_data)
         self.__load_hosts(_data)
 
-        
+
+    def __print(self):
+
+        _txt = ""
+        _txt += "PATH %s\n" % (self.__path,)
+        _txt += "---------------------------------------\n"
+        _txt += str(self.notifications)
+        _txt += "---------------------------------------\n"
+        _txt += str(self.logger)
+        _txt += "---------------------------------------\n"
+
+        for _host in self.hosts:
+            _txt += "---------------------------------------\n"
+            _txt += str(_host)
+            _txt += "---------------------------------------\n"
+
+        return _txt
+
+    def __str__(self):
+
+        return self.__print()
+
+    def __repr__(self):
+
+        return self.__print()      
 
 
 

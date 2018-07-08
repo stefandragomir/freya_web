@@ -8,7 +8,7 @@ from time      import sleep
 """****************************************************************************
 *******************************************************************************
 ****************************************************************************"""
-def _FY_Com_Socket(object):
+class _FY_Com_Socket(object):
 
     def __init__(self,logger):
 
@@ -67,7 +67,7 @@ def _FY_Com_Socket(object):
 """****************************************************************************
 *******************************************************************************
 ****************************************************************************"""
-class _FY_Com_Thread(object):
+class _FY_Com_Thread(Thread):
 
     def __init__(self,host,logger):
 
@@ -81,7 +81,11 @@ class _FY_Com_Thread(object):
         self._stop_event    = Event()
         self._stopped_event = Event()
 
+        self.__env.logger.debug("_FY_Com_Thread: creating thread: %s" % (self.__host.name,))
+
     def stop_running(self):
+
+        self.__env.logger.debug("_FY_Com_Thread: stopping thread: %s" % (self.__host.name,))
 
         #reset the confirmed stop event just in case
         self._stopped_event.clear()
@@ -98,31 +102,39 @@ class _FY_Com_Thread(object):
         self._stop_event.clear()
         self._stopped_event.clear()
 
+        self.__env.logger.debug("_FY_Com_Thread: starting thread: %s" % (self.__host.name,))
+
         self.start()
 
     def run(self):
 
         self.__socket = _FY_Com_Socket(self.__logger)
 
+        self.__env.logger.debug("_FY_Com_Thread: opening socket thread for host: %s" % (self.__host.name,))
+
         self.__socket.open(self.__host.socket.host,self.__host.socket.port)
 
-        while not self._stop_event.wait(0.1):                           
+        while not self._stop_event.wait(0.1):  
+
+            sleep(1) 
+            print("tick")                        
             
-            self.__socket.wait_for_connection(self.__host.socket.max_connections)
+            # self.__socket.wait_for_connection(self.__host.socket.max_connections)
 
-            _data = self.__socket.read(4096)
+            # _data = self.__socket.read(4096)
 
-            if _data:
-                
-                print(data)
+            # if _data:
+
+            #     print(data)
 
         #clear the stop event
         self._stop_event.clear()
 
         #trigger the confirmation event to tell all this thread has stopped      
         self._stopped_event.set()
+
+        self.__env.logger.debug("_FY_Com_Thread: thread stopped for host: %s" % (self.__host.name,))
            
-        
 """****************************************************************************
 *******************************************************************************
 ****************************************************************************"""
@@ -134,6 +146,8 @@ class FY_Com(object):
         self.__host_threads = []
 
     def start(self):
+
+        self.__env.logger.debug(self.__env.config)
 
         for _host in self.__env.config.hosts:
 

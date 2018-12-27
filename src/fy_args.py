@@ -21,10 +21,9 @@ class FY_Arguments(object):
     def __add_arguments(self):        
         """Define all arguments for the PGB admin"""
 
-        self.__arg_parser.add_argument('-st'      , '--start',      type=str,  help='start the freya web server with the env the CWD' )  
-        self.__arg_parser.add_argument('-sp'      , '--stop',       type=str,  help='stop the freya webs server with the env the CWD' )  
-        self.__arg_parser.add_argument('-rs'      , '--restart',    type=str,  help='restart the freya webs server with the env the CWD' ) 
-        self.__arg_parser.add_argument('-crt'     , '--createenv',  type=str,  help='create a new freya web server configuration in the CWD' ) 
+        self.__arg_parser.add_argument('-st'      , '--start',      action='store_true',  help='start the freya web server with the env the CWD' )  
+        self.__arg_parser.add_argument('-sp'      , '--stop',       action='store_true',  help='stop the freya webs server with the env the CWD' )  
+        self.__arg_parser.add_argument('-rs'      , '--restart',    action='store_true',  help='restart the freya webs server with the env the CWD' ) 
  
     def get_arguments(self):
         """Parse command line arguments"""

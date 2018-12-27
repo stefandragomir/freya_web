@@ -1,6 +1,7 @@
 import json
 import os
-from pprint import pprint
+from pprint    import pprint
+from fy_err    import FY_Err_Config
 
 """****************************************************************************
 *******************************************************************************
@@ -120,26 +121,14 @@ class _FY_Config_Host(object):
 """****************************************************************************
 *******************************************************************************
 ****************************************************************************"""
-
 class FY_Config(object):
 
     def __init__(self,path):
 
-        self.__path          = path
-        self.__paths_configs = []
+        self.path            = path
         self.notifications   = _FY_Config_Notifications()
         self.logger          = _FY_Config_Logger()
         self.hosts           = []
-
-    def __get_config_files(self):
-
-        self.__paths_configs = []
-
-        for _root, _dirs, _files in os.walk(self.__path):
-            
-            for _file in _files:
-                
-                self.__paths_configs.append(os.path.join(_root, _file))
 
     def __load_notifications(self,data):
 
@@ -210,12 +199,12 @@ class FY_Config(object):
                             raise FY_Err_Config("Missing configuration: hosts->host->socket->max_connection")
 
                         if 'host' in data['hosts'][_host_name]['socket']:
-                            self.hosts[-1].socket.max_connection = data['hosts'][_host_name]['socket']['host']
+                            self.hosts[-1].socket.host = data['hosts'][_host_name]['socket']['host']
                         else:
                             raise FY_Err_Config("Missing configuration: hosts->host->socket->host")
 
                         if 'port' in data['hosts'][_host_name]['socket']:
-                            self.hosts[-1].socket.max_connection = data['hosts'][_host_name]['socket']['port']
+                            self.hosts[-1].socket.port = data['hosts'][_host_name]['socket']['port']
                         else:
                             raise FY_Err_Config("Missing configuration: hosts->host->socket->port")
                     else:
@@ -229,29 +218,18 @@ class FY_Config(object):
 
         _data = {}
 
-        self.__get_config_files()
+        with open(self.path,'r') as _config_file:
 
-        _json_datas = []
-
-        for _path_config in self.__paths_configs:
-
-            with open(_path_config) as _config_file:
-
-                _json_datas.append(json.load(_config_file))
-
-        for _json_data in _json_datas:
-
-            _data = {**_data,**_json_data}
+            _data = json.load(_config_file)
 
         self.__load_logger(_data)
         self.__load_notifications(_data)
         self.__load_hosts(_data)
 
-
     def __print(self):
 
         _txt = ""
-        _txt += "PATH %s\n" % (self.__path,)
+        _txt += "PATH %s\n" % (self.path,)
         _txt += "---------------------------------------\n"
         _txt += str(self.notifications)
         _txt += "---------------------------------------\n"

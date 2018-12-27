@@ -66,17 +66,12 @@ class FY_Logger(object):
      - debug
     """
 
-    def __init__(self, name="", console=True, path="", level='info',max_size="50000000"):
+    def __init__(self,console=True, path="", level='info',max_size="50000000"):
 
         self.__console     = console
         self.__path        = path
         self.__level       = level
-        self.__name        = name
         self.__max_size    = max_size
-
-        _file_name = "%s.log" % (name,)
-
-        self.__path  = os.path.join(self.__path,_file_name)
 
         if not os.path.exists(self.__path):
             FY_Touch(self.__path)
@@ -141,9 +136,7 @@ class FY_Logger(object):
         if not os.path.exists(_archive_path):
             FY_Create_Dir(_archive_path)
 
-        _name = "freya_log_%s" % (self.__name,)
-
-        _archive_path = os.path.join(_archive_path,strftime(_name + "_%d_%m_%Y_%H_%M_%S.zip", gmtime()))
+        _archive_path = os.path.join(_archive_path,strftime("freya_%d_%m_%Y_%H_%M_%S.zip", gmtime()))
 
         _arch = zipfile.ZipFile(_archive_path, mode='w')
 

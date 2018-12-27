@@ -1,5 +1,6 @@
 
 import socket
+import signal
 
 from threading import Thread
 from threading import Event
@@ -12,57 +13,56 @@ class _FY_Com_Socket(object):
 
     def __init__(self,logger):
 
-        self.__logger     = logger
-        self.__socket     = None
-        self.__connection = None
-        self.__address    = None
-        self.host         = None
-        self.port         = None
+        self.logger     = logger
+        self.socket     = None
+        self.connection = None
+        self.address    = None
+        self.host       = None
+        self.port       = None
 
     def write(self,data):
 
-        self.__logger.debug("Socket: writting data [%s]" % (data,))
+        self.logger.debug("Socket: writting data [%s]" % (data,))
 
-        self.__connection.send(data)
+        self.connection.send(data)
 
     def read(self,nr_of_bytes):
         
-        _data = self.__connection.recv(nr_of_bytes)
+        _data = self.connection.recv(nr_of_bytes)
 
-        self.__logger.debug("Socket: read data [%s]" % (_data,))
+        self.logger.debug("Socket: read data [%s]" % (_data,))
 
         return _data
 
     def open(self,host,port):
 
-        self.__logger.debug("Socket: Opening socket on %s with port %s" % (host,port))
+        self.logger.debug("Socket: Opening socket on %s with port %s" % (host,port))
 
-        self.__socket = socket.socket(
+        self.socket = socket.socket(
                                         socket.AF_INET, 
                                         socket.SOCK_STREAM)
 
-        self.__socket.bind((host, port))
+        self.socket.bind((host, int(port)))
 
-        self.__logger.debug("Socket: Socket opened")
+        self.logger.debug("Socket: Socket opened")
 
     def wait_for_connection(self,max_connections):
 
-        self.__logger.debug("Socket: waiting for connection...")
+        self.logger.debug("Socket: waiting for connection...")
 
-        self.__socket.listen(max_connections)
+        self.socket.listen(max_connections)
 
-        self.__logger.debug("Socket: connection detected")
+        self.logger.debug("Socket: connection detected")
 
-        self.__connection, self.__address = self.__socket.accept()
+        self.connection, self.address = self.socket.accept()
 
-        self.__logger.debug("Socket: connection accepted")
+        self.logger.debug("Socket: connection accepted")
 
     def close(self):
 
-        self.__env.logger.debug("Socket: Closing socket")
+        self.logger.debug("Socket: Closing socket")
 
-        self.__socket.close()
-
+        self.socket.close()
 
 """****************************************************************************
 *******************************************************************************
@@ -71,50 +71,50 @@ class _FY_Com_Thread(Thread):
 
     def __init__(self,host,logger):
 
-        self.__host   = host
-        self.__logger = logger
+        self.host   = host
+        self.logger = logger
 
         #initialise the thread object
         Thread.__init__(self)
 
         #create control events
-        self._stop_event    = Event()
-        self._stopped_event = Event()
+        self.__stop_event    = Event()
+        self.__stopped_event = Event()
 
-        self.__env.logger.debug("_FY_Com_Thread: creating thread: %s" % (self.__host.name,))
+        self.logger.debug("_FY_Com_Thread: creating thread: %s" % (self.host.name,))
 
     def stop_running(self):
 
-        self.__env.logger.debug("_FY_Com_Thread: stopping thread: %s" % (self.__host.name,))
+        self.logger.debug("_FY_Com_Thread: stopping thread: %s" % (self.host.name,))
 
         #reset the confirmed stop event just in case
-        self._stopped_event.clear()
+        self.__stopped_event.clear()
 
         #trigger the stop event
-        self._stop_event.set()
+        self.__stop_event.set()
         
         #wait to see if the thread stopped
-        self._stopped_event.wait(1)
+        self.__stopped_event.wait(1)
 
     def start_running(self):
 
         #clear the two control events
-        self._stop_event.clear()
-        self._stopped_event.clear()
+        self.__stop_event.clear()
+        self.__stopped_event.clear()
 
-        self.__env.logger.debug("_FY_Com_Thread: starting thread: %s" % (self.__host.name,))
+        self.logger.debug("_FY_Com_Thread: starting thread: %s" % (self.host.name,))
 
         self.start()
 
     def run(self):
 
-        self.__socket = _FY_Com_Socket(self.__logger)
+        self.socket = _FY_Com_Socket(self.logger)
 
-        self.__env.logger.debug("_FY_Com_Thread: opening socket thread for host: %s" % (self.__host.name,))
+        self.logger.debug("_FY_Com_Thread: opening socket thread for host: %s" % (self.host.name,))
 
-        self.__socket.open(self.__host.socket.host,self.__host.socket.port)
+        self.socket.open(self.host.socket.host,self.host.socket.port)
 
-        while not self._stop_event.wait(0.1):  
+        while not self.__stop_event.wait(0.1):  
 
             sleep(1) 
             print("tick")                        
@@ -128,12 +128,12 @@ class _FY_Com_Thread(Thread):
             #     print(data)
 
         #clear the stop event
-        self._stop_event.clear()
+        self.__stop_event.clear()
 
         #trigger the confirmation event to tell all this thread has stopped      
-        self._stopped_event.set()
+        self.__stopped_event.set()
 
-        self.__env.logger.debug("_FY_Com_Thread: thread stopped for host: %s" % (self.__host.name,))
+        self.logger.debug("_FY_Com_Thread: thread stopped for host: %s" % (self.host.name,))
            
 """****************************************************************************
 *******************************************************************************
@@ -145,6 +145,20 @@ class FY_Com(object):
         self.__env          = env
         self.__host_threads = []
 
+    def register_to_signals(self):
+
+        if os.name != 'nt':
+
+            signal.signal(signal.SIGUSR1, self.clbk_signals)
+
+    def clbk_signals(signum, stack):
+    
+        if signal.SIGUSR1 == signum:
+
+            for _thread in self.__host_threads:
+
+                _thread.stop_running()
+
     def start(self):
 
         self.__env.logger.debug(self.__env.config)
@@ -155,6 +169,8 @@ class FY_Com(object):
             _thread.start_running()
 
             self.__host_threads.append(_thread)
+
+        self.register_to_signals()
 
     def stop(self):
 

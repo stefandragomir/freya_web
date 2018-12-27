@@ -1,0 +1,25 @@
+[12:28:19 PM 27-December-2018] [INFO]      -> Starting Freya Server...
+[12:28:19 PM 27-December-2018] [DEBUG]      -> PATH d:\projects\freya_web\src\freya.config
+---------------------------------------
+HOST     : 
+PORT     : 
+RECEIVERS: ['', '']
+CC       : ['', '']
+BCC      : ['', '']
+---------------------------------------
+USE        : True
+MAX SIZE   : 50000000
+LEVEL      : debug
+---------------------------------------
+---------------------------------------
+HOST NAME: host_1
+HOST   : 127.0.0.1
+PORT   : 8000
+MAX CON: None
+---------------------------------------
+
+[12:28:19 PM 27-December-2018] [DEBUG]      -> _FY_Com_Thread: creating thread: host_1
+[12:28:19 PM 27-December-2018] [DEBUG]      -> _FY_Com_Thread: starting thread: host_1
+[12:28:19 PM 27-December-2018] [INFO]      -> Done
+[12:28:19 PM 27-December-2018] [DEBUG]      -> _FY_Com_Thread: opening socket thread for host: host_1
+[12:28:19 PM 27-December-2018] [DEBUG]      -> Socket: Opening socket on 127.0.0.1 with port 8000

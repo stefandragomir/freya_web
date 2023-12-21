@@ -1,9 +1,8 @@
 import sys
-import zipfile
-import os
 
 from fy_os import FY_Dir
-from fy_os import FY_File
+from fy_os import FY_File_Txt
+from fy_os import FY_OS
 
 """****************************************************************************
 *******************************************************************************
@@ -13,10 +12,12 @@ class FY_Logger(object):
     def __init__(self,console,path,level,max_size):
 
         self.console     = console
-        self.path        = path
+        self.path        = path.file_txt("log")
         self.level       = level
         self.max_size    = max_size
-        self.archive     = self.path.dir().join("archive")
+        self.archive     = self.path.dir()
+
+        self.archive.join("archive")
 
         self.path.touch()
 
@@ -48,13 +49,11 @@ class FY_Logger(object):
 
         if self.__is_log_level(level):
 
-            _date    = datetime.now().strftime("%I:%M:%S %p %d-%B-%Y")
+            _log_txt = "[{}] [{}]      -> {}".format(FY_OS().timestamp_2(),level.upper(),txt)
 
-            _log_txt = "[%s] [%s]      -> %s" % (_date,level.upper(),txt)
+            _log_txt_console = " -> {}".format(txt,)
 
-            _log_txt_console = " -> %s" % (txt,)
-
-            if self.__console:
+            if self.console:
 
                 sys.stdout.write(_log_txt_console + "\n")
 
@@ -64,24 +63,13 @@ class FY_Logger(object):
 
         if self.path.size() >= int(self.max_size):
 
-            self.__archive_log()
+            _archive_path = self.archive.file_zip("{}.zip", FY_OS().timestamp_1())
 
-        self.path.append_txt(txt)
+            _archive_path.write(self.path)
 
-    def __archive_log(self):
+            self.path.delete()
 
-        _archive_path = self.archive.file("{}.zip", FY_OS().timestamp())
-
-        _arch = zipfile.ZipFile(_archive_path.path, mode='w')
-
-        _arch.write(
-                    self.path.path,
-                    self.path.dir.path, 
-                    compress_type=zipfile.ZIP_DEFLATED)
-
-        _arch.close()
-
-        self.path.delete()
+        self.path.append(txt)
 
     def info(self,txt):
 

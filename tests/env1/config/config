@@ -1,0 +1,29 @@
+{
+    "notifications": {
+        "host": "localhost",
+        "port": "587",
+        "receivers": [
+            ""
+        ],
+        "cc": [
+            ""
+        ],
+        "bcc": [
+            ""
+        ]
+    },
+    "logger": {
+        "use": false,
+        "max_size": "50000000",
+        "level": "debug"
+    },
+    "hosts": {
+        "default": {
+            "socket": {
+                "host": "localhost",
+                "port": "80",
+                "max_connections": "1"
+            }
+        }
+    }
+}

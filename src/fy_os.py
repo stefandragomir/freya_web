@@ -1,11 +1,14 @@
 import os
 import shutil
 import shlex
+import json
+import zipfile
 
 from datetime               import datetime
 from time                   import gmtime
 from time                   import strftime
 from fy_err                 import FY_Err_Type
+from fy_err                 import FY_Not_Implemented
 from copy                   import deepcopy
 
 
@@ -30,9 +33,13 @@ class FY_OS():
 
         return os.getpid()
 
-    def timestamp(self):
+    def timestamp_1(self):
 
         return strftime("%d_%m_%Y_%H_%M_%S", gmtime()) 
+
+    def timestamp_2(self):
+
+        return datetime.now().strftime("%I:%M:%S %p %d-%B-%Y")
 
 """****************************************************************************
 *******************************************************************************
@@ -242,7 +249,38 @@ class FY_Dir(FY_Path):
 
     def file(self,name):
 
-        return  FY_File(self.path).join(name)
+        _file = FY_File(self.path)
+        _file.join(name)
+
+        return  _file
+
+    def file_txt(self,name):
+
+        _file = FY_File_Txt(self.path)
+        _file.join(name)
+
+        return  _file
+
+    def file_bin(self,name):
+
+        _file = FY_File_Bin(self.path)
+        _file.join(name)
+
+        return  _file
+
+    def file_json(self,name):
+
+        _file = FY_File_Json(self.path)
+        _file.join(name)
+
+        return  _file
+
+    def file_zip(self,name):
+
+        _file = FY_File_Zip(self.path)
+        _file.join(name)
+
+        return  _file
 
     def add(self,name):
 
@@ -327,68 +365,15 @@ class FY_File(FY_Path):
         if not self.exists():
 
             try:
-                with open(path,'w+') as _file:
+                with open(self.path,'w+') as _file:
 
                     _file.write("")
             except:
                 raise FY_Err_Touch
 
-    def write_txt(self,data):
-
-        try:
-            with open(self.path,'w+') as _file:
-
-                _file.write(data)
-        except:
-            raise FY_Err_Write_Txt_File
-
-    def write_bin(self,data):
-
-        try:
-            with open(path,'wb') as _file:
-
-                _file.write(data)
-        except:
-            raise FY_Err_Write_Binary_File
-
-    def read_txt(self):
-
-        _data = ""
-
-        try:
-            with open(self.path,'r') as _file:
-
-                _data = _file.read()
-        except:
-            raise FY_Err_Read_Txt_File
-
-        return _data
-
-    def append_txt(self,data):
-
-        try:
-            with open(self.path,'a') as _file:
-
-                _file.write(data)
-        except:
-            raise FY_Err_Append_To_Txt_File
-
-    def read_bin(self):
-
-        _data = ""
-
-        try:
-            with open(self.path,'rb') as _file:
-
-                _data = _file.read()
-        except:
-            raise FY_Err_Read_Binary_File
-
-        return _data
-
     def dir(self):
 
-        return self.root()
+        return FY_Dir(self.root().path)
 
     def size(self):
 
@@ -397,6 +382,18 @@ class FY_File(FY_Path):
     def ext(self):
 
         return os.path.splitext(self.path)[1]
+
+    def write(self,data):
+
+        raise FY_Not_Implemented
+
+    def read(self):
+
+        raise FY_Not_Implemented
+
+    def append(self,data):
+
+        raise FY_Not_Implemented
 
     def __print(self):
 
@@ -411,6 +408,126 @@ class FY_File(FY_Path):
     def __repr__(self):
 
         return self.__print()
+
+"""****************************************************************************
+*******************************************************************************
+****************************************************************************"""
+class FY_File_Txt(FY_File):
+
+    def __init__(self,path):
+
+        FY_File.__init__(self,path)
+
+    def write(self,data):
+
+        try:
+            with open(self.path,'w+') as _file:
+
+                _file.write(data)
+        except:
+            raise FY_Err_Write_Txt_File
+
+    def read(self):
+
+        _data = ""
+
+        try:
+            with open(self.path,'r') as _file:
+
+                _data = _file.read()
+        except:
+            raise FY_Err_Read_Txt_File
+
+        return _data
+
+    def append(self,data):
+
+        try:
+            with open(self.path,'a') as _file:
+
+                _file.write(data)
+        except:
+            raise FY_Err_Append_To_Txt_File
+
+"""****************************************************************************
+*******************************************************************************
+****************************************************************************"""
+class FY_File_Bin(FY_File):
+
+    def __init__(self,path):
+
+        FY_File.__init__(self,path)
+
+    def write_bin(self,data):
+
+        try:
+            with open(path,'wb') as _file:
+
+                _file.write(data)
+        except:
+            raise FY_Err_Write_Binary_File
+
+    def read_bin(self):
+
+        _data = ""
+
+        try:
+            with open(self.path,'rb') as _file:
+
+                _data = _file.read()
+        except:
+            raise FY_Err_Read_Binary_File
+
+        return _data
+
+"""****************************************************************************
+*******************************************************************************
+****************************************************************************"""
+class FY_File_Json(FY_File):
+
+    def __init__(self,path):
+
+        FY_File.__init__(self,path)
+
+    def write(self,data):
+ 
+        with open(self.path, "w") as _file:
+
+            _file.write(json.dumps(data, indent=4))
+
+    def read(self):
+
+        _data = {}
+
+        with open(self.path,'r') as _file:
+
+            _data = json.load(_file)
+
+        return _data
+
+"""****************************************************************************
+*******************************************************************************
+****************************************************************************"""
+class FY_File_Zip(FY_File):
+
+    def __init__(self,path):
+
+        FY_File.__init__(self,path)
+
+    def write(self,path):
+
+        _arch = zipfile.ZipFile(self.path, mode='w')
+
+        _arch.write(
+                    path.path,
+                    self.dir(), 
+                    compress_type=zipfile.ZIP_DEFLATED)
+
+        _arch.close()
+
+    def read(self):
+
+        raise FY_Not_Implemented
 
 """****************************************************************************
 *******************************************************************************

@@ -49,7 +49,7 @@ class FY_Logger(object):
 
         if self.__is_log_level(level):
 
-            _log_txt = "[{}] [{}]      -> {}".format(FY_OS().timestamp_2(),level.upper(),txt)
+            _log_txt = "[{}] [{}]      -> {}".format(FY_OS.timestamp_2(),level.upper(),txt)
 
             _log_txt_console = " -> {}".format(txt,)
 
@@ -63,7 +63,7 @@ class FY_Logger(object):
 
         if self.path.size() >= int(self.max_size):
 
-            _archive_path = self.archive.file_zip("{}.zip", FY_OS().timestamp_1())
+            _archive_path = self.archive.file_zip("{}.zip", FY_OS.timestamp_1())
 
             _archive_path.write(self.path)
 

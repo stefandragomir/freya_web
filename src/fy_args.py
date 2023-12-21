@@ -1,11 +1,5 @@
-"""
---start
---stop
---restart
---createenv
-"""
 import sys
-from argparse                           import ArgumentParser
+from argparse  import ArgumentParser
 
 """****************************************************************************
 *******************************************************************************
@@ -21,7 +15,7 @@ class FY_Arguments(object):
     def __add_arguments(self):        
         """Define all arguments for the PGB admin"""
 
-        self.__arg_parser.add_argument('-it'      , '--init',       action='store_true',  help='create default freya webs server configuration in CWD' )
+        self.__arg_parser.add_argument('-it'      , '--init',       action='store_true',  help='create default freya web server configuration in CWD' )
         self.__arg_parser.add_argument('-st'      , '--start',      action='store_true',  help='start the freya web server with the env the CWD' )  
         self.__arg_parser.add_argument('-sp'      , '--stop',       action='store_true',  help='stop the freya webs server with the env the CWD' )  
         self.__arg_parser.add_argument('-rs'      , '--restart',    action='store_true',  help='restart the freya webs server with the env the CWD' ) 

@@ -21,22 +21,27 @@ class FY_OS():
 
         pass
 
+    @staticmethod
     def is_windows(self):
 
         return os.name == 'nt'
 
+    @staticmethod
     def cwd(self):
 
         return FY_Dir(os.path.abspath(os.getcwd()))
 
+    @staticmethod
     def pid(self):
 
         return os.getpid()
 
+    @staticmethod
     def timestamp_1(self):
 
         return strftime("%d_%m_%Y_%H_%M_%S", gmtime()) 
 
+    @staticmethod
     def timestamp_2(self):
 
         return datetime.now().strftime("%I:%M:%S %p %d-%B-%Y")
@@ -62,7 +67,7 @@ class FY_Process():
 
     def __get_command(self,cmd):
         
-        if FY_OS().is_windows():
+        if FY_OS.is_windows():
             pass
         else:
 
@@ -423,7 +428,7 @@ class FY_File_Txt(FY_File):
         try:
             with open(self.path,'w+') as _file:
 
-                _file.write(data)
+                _file.write(str(data))
         except:
             raise FY_Err_Write_Txt_File
 

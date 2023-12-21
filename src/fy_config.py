@@ -128,16 +128,16 @@ class _FY_Config_Socket(object):
 
     def __init__(self):
 
-        self.host            = "localhost"
+        self.host            = "127.0.0.1"
         self.port            = "80"
         self.max_connections = "1"
 
     def load(self,data):
 
-        if 'max_connection' in data:
-            self.max_connection = data['max_connection']
+        if 'max_connections' in data:
+            self.max_connection = data['max_connections']
         else:
-            raise FY_Err_Config("Missing configuration: hosts->host->socket->max_connection")
+            raise FY_Err_Config("Missing configuration: hosts->host->socket->max_connections")
 
         if 'host' in data:
             self.host = data['host']

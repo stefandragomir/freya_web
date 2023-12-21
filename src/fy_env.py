@@ -12,7 +12,7 @@ class FY_Environment(object):
 
     def __init__(self):
 
-        self.path        = FY_OS().cwd()
+        self.path        = FY_OS.cwd()
         self.path_config = self.path.add("config")
         self.path_log    = self.path.add("log") 
         self.path_lock   = self.path.add("lock")
@@ -93,7 +93,7 @@ class FY_Lock(object):
 
     def __init__(self,path):
 
-        self.path = FY_File_Txt(self.path_dir.path).join("freya.pid")
+        self.path = path.file_txt("freya.pid")
 
     def is_lock(self):
 
@@ -102,7 +102,7 @@ class FY_Lock(object):
     def acquire(self):
 
         if not self.is_lock():        
-            self.path.write(FY_OS().pid())
+            self.path.write(FY_OS.pid())
         else:
             _pid = self.path.read()
             raise FY_Err_Env_Lock("Another process is using this environment with PID [{}]".format((_pid)))

@@ -5,6 +5,7 @@ import signal
 from threading import Thread
 from threading import Event
 from time      import sleep
+from fy_os     import FY_OS
 
 """****************************************************************************
 *******************************************************************************
@@ -142,12 +143,12 @@ class FY_Com(object):
 
     def __init__(self,env):
 
-        self.__env          = env
-        self.__host_threads = []
+        self.env          = env
+        self.host_threads = []
 
     def register_to_signals(self):
 
-        if os.name != 'nt':
+        if not FY_OS.is_windows():
 
             signal.signal(signal.SIGUSR1, self.clbk_signals)
 
@@ -155,26 +156,26 @@ class FY_Com(object):
     
         if signal.SIGUSR1 == signum:
 
-            for _thread in self.__host_threads:
+            for _thread in self.host_threads:
 
                 _thread.stop_running()
 
     def start(self):
 
-        self.__env.logger.debug(self.__env.config)
+        self.env.logger.debug(self.env.config)
 
         for _host in self.__env.config.hosts:
 
-            _thread = _FY_Com_Thread(_host,self.__env.logger)
+            _thread = _FY_Com_Thread(_host,self.env.logger)
             _thread.start_running()
 
-            self.__host_threads.append(_thread)
+            self.host_threads.append(_thread)
 
         self.register_to_signals()
 
     def stop(self):
 
-        for _thread in self.__host_threads:
+        for _thread in self.host_threads:
 
             _thread.stop_running()
 

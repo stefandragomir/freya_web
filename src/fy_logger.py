@@ -2,96 +2,44 @@ import sys
 import zipfile
 import os
 
-from datetime               import datetime
-from time                   import gmtime
-from time                   import strftime
-from fy_err  				import FY_Err_Send_Email
-from smtplib                import SMTP         as SMTP
-from email.mime.multipart   import MIMEMultipart
-from email.mime.text        import MIMEText
-from fy_os                  import FY_Touch
-from fy_os                  import FY_Append_To_Txt_File
-from fy_os                  import FY_Delete_File
-from fy_os                  import FY_Create_Dir
-
-
-"""****************************************************************************
-*******************************************************************************
-****************************************************************************"""
-class FY_Notifications(object):
-
-    COMMASPACE = ', '
-
-    def __init__(self,host,port,logger=None):
-
-        self.__logger   = logger
-        self.__host     = host
-        self.__port     = port
-
-    def send(self,sender,receivers,cc,bcc,subject,message):
-     
-        receivers = list(set(receivers))
-
-        try:
-            
-            _msg = MIMEMultipart('alternative')
-            _msg.attach(MIMEText(message, 'html'))
-            
-            _msg['Subject'] = subject
-            _msg['From']    = sender
-            _msg['To']      = self.COMMASPACE.join(receivers)
-            
-            _smtp = SMTP(self.__host, self.__port)
-            
-            _smtp.sendmail(sender, receivers, _msg.as_string())
-            _smtp.quit()
-
-        except:
-
-            raise FY_Err_Send_Email
-
-            if self.__logger != None:
-
-                self.__logger.error("Could not send email to %s" % (str(receivers),))
+from fy_os import FY_Dir
+from fy_os import FY_File
 
 """****************************************************************************
 *******************************************************************************
 ****************************************************************************"""
 class FY_Logger(object):
-    """
-    Logger levels:
-     - info
-     - warning
-     - error
-     - debug
-    """
 
-    def __init__(self,console=True, path="", level='info',max_size="50000000"):
+    def __init__(self,console,path,level,max_size):
 
-        self.__console     = console
-        self.__path        = path
-        self.__level       = level
-        self.__max_size    = max_size
+        self.console     = console
+        self.path        = path
+        self.level       = level
+        self.max_size    = max_size
+        self.archive     = self.path.dir().join("archive")
 
-        if not os.path.exists(self.__path):
-            FY_Touch(self.__path)
+        self.path.touch()
+
+        if not self.archive.exists():
+
+            self.archive.create()
 
     def __is_log_level(self,level):
 
         _log = False
 
-        if self.__level == "debug":
+        if self.level == "debug":
             _log = True
         else:
-            if self.__level == 'error':
+            if self.level == 'error':
                 if level == 'info' or level == 'warning' or level == 'error':
                     _log = True
             else:
-                if self.__level == 'warning':
+                if self.level == 'warning':
                     if level == 'info' or level == 'warning':
                         _log = True
                 else:
-                    if self.__level == 'info':
+                    if self.level == 'info':
                         if level == 'info':
                             _log = True
         return _log
@@ -114,40 +62,26 @@ class FY_Logger(object):
 
     def __log_to_file(self,txt):
 
-        #in case the log file is to big we will archive it
-        if self.__is_log_to_big():
+        if self.path.size() >= int(self.max_size):
+
             self.__archive_log()
 
-        FY_Append_To_Txt_File(self.__path,txt)
-
-    def __is_log_to_big(self):
-        _is_big = False
-
-        #check if file is larger then 50MB
-        if os.path.getsize(self.__path) >= int(self.__max_size):
-            _is_big = True
-
-        return _is_big
+        self.path.append_txt(txt)
 
     def __archive_log(self):
-        
-        _archive_path = os.path.join(os.path.split(self.__path)[0],"freya_log_archive")
 
-        if not os.path.exists(_archive_path):
-            FY_Create_Dir(_archive_path)
+        _archive_path = self.archive.file("{}.zip", FY_OS().timestamp())
 
-        _archive_path = os.path.join(_archive_path,strftime("freya_%d_%m_%Y_%H_%M_%S.zip", gmtime()))
-
-        _arch = zipfile.ZipFile(_archive_path, mode='w')
+        _arch = zipfile.ZipFile(_archive_path.path, mode='w')
 
         _arch.write(
-                    self.__path,
-                    os.path.basename(self.__path), 
+                    self.path.path,
+                    self.path.dir.path, 
                     compress_type=zipfile.ZIP_DEFLATED)
 
         _arch.close()
 
-        FY_Delete_File(self.__path)
+        self.path.delete()
 
     def info(self,txt):
 

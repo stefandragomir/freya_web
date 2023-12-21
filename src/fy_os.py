@@ -2,39 +2,42 @@ import os
 import shutil
 import shlex
 
-from fy_err  import FY_Err_Copy_File
-from fy_err  import FY_Err_Move_File
-from fy_err  import FY_Err_Delete_File
-from fy_err  import FY_Err_Copy_Dir
-from fy_err  import FY_Err_Move_Dir
-from fy_err  import FY_Err_Delete_Dir
-from fy_err  import FY_Err_Breakeup_Path
-from fy_err  import FY_Err_Call_Process
-from fy_err  import FY_Err_Append_To_Txt_File
-from fy_err  import FY_Err_Read_Txt_File
-from fy_err  import FY_Err_Write_Txt_File
-from fy_err  import FY_Err_Read_Binary_File
-from fy_err  import FY_Err_Write_Binary_File
-from fy_err  import FY_Err_Touch
-from fy_err  import FY_Err_Create_Dir
+from datetime               import datetime
+from time                   import gmtime
+from time                   import strftime
+from fy_err                 import FY_Err_Type
+from copy                   import deepcopy
+
 
 """****************************************************************************
 *******************************************************************************
 ****************************************************************************"""
-def FY_IsWindows():
+class FY_OS():
 
-    _state = False
+    def __init__(self):
 
-    if os.name == 'nt':
+        pass
 
-        _state = True
+    def is_windows(self):
 
-    return _state
+        return os.name == 'nt'
+
+    def cwd(self):
+
+        return FY_Dir(os.path.abspath(os.getcwd()))
+
+    def pid(self):
+
+        return os.getpid()
+
+    def timestamp(self):
+
+        return strftime("%d_%m_%Y_%H_%M_%S", gmtime()) 
 
 """****************************************************************************
 *******************************************************************************
 ****************************************************************************"""
-class FY_Process(object):
+class FY_Process():
 
     _log   = None
 
@@ -52,7 +55,7 @@ class FY_Process(object):
 
     def __get_command(self,cmd):
         
-        if FY_IsWindows():
+        if FY_OS().is_windows():
             pass
         else:
 
@@ -79,7 +82,7 @@ class FY_Process(object):
         cmd = self.__get_command(cmd)
 
         if self.__logger != None:
-            self.__logger.debug("CMD CWD: %s" % (self.__cwd,))
+            self.__logger.debug("CMD CWD: %s" % (self.__cwd.path,))
             self.__logger.debug("CMD    : %s" % (str(cmd),))
 
         try:
@@ -93,7 +96,7 @@ class FY_Process(object):
                             preexec_fn=None, 
                             close_fds=False, 
                             shell=False, 
-                            cwd=self.__cwd, 
+                            cwd=self.__cwd.path, 
                             env=self.__get_env(),
                             universal_newlines=False, 
                             startupinfo=None, 
@@ -103,7 +106,7 @@ class FY_Process(object):
             raise FY_Err_Call_Process
 
             if self.__logger != None:
-                self.__logger.error("Could not execute command [%s] at cwd [%s]" % (cmd,self.__cwd))
+                self.__logger.error("Could not execute command [%s] at cwd [%s]" % (cmd,self.__cwd.path))
 
         _std_out, _std_err = _proc.communicate()
 
@@ -114,317 +117,345 @@ class FY_Process(object):
 """****************************************************************************
 *******************************************************************************
 ****************************************************************************"""
-def FY_Brakeup_Path(path):
-    """ Receive a path and return a list of all subpaths in that path"""
+class FY_Path():
 
-    _components = [path]
-    _remainder  = None
+    def __init__(self,path):
 
-    try:
-        while _remainder != '':
+        self.path = os.path.abspath(path.strip())
 
-            _component,_remainder = os.path.split(path)
+    def exists(self):
 
-            if _remainder != '':
-                _components.append(_component)
-                path = _component
-    except:
-        raise FY_Err_Breakeup_Path
+        return os.path.exists(self.path)
 
-    return _components
+    def is_empty(self):
+
+        return self.path == ''
+
+    def breakup():
+
+        _path       = self.path
+        _components = [self]
+        _remainder  = FY_Path("")
+
+        try:
+            while _remainder != '':
+
+                _component,_remainder = os.path.split(_path)
+
+                if _remainder != '':
+                    _components.append(FY_Path(_component))
+                    _path = _component
+        except:
+            raise FY_Err_Breakeup_Path
+
+        return _components
+
+    def join(self,*components):
+
+        self.path = os.path.join(self.path,*components)
+
+    def split(self):
+
+        self.path = os.path.split(self.path)[0]
+
+    def root(self):
+
+        return FY_Path(os.path.split(self.path)[0])
+
+    def file(self):
+
+        return os.path.split(self.path)[1]
+
+    def is_file(self):
+
+        return os.path.isfile(self.path)
+
+    def is_dir(self):
+
+        return os.path.isfile(self.path)
+
+    def duplicate(self):
+
+        return deepcopy(self)
+
+    def __print(self):
+
+        _txt = "PATH: [{}]".format(self.path)
+
+        return _txt
+
+    def __str__(self):
+
+        return self.__print()
+
+    def __repr__(self):
+
+        return self.__print()
 
 """****************************************************************************
 *******************************************************************************
 ****************************************************************************"""
-def FY_Copy_File(src,dest):
+class FY_Dir(FY_Path):
 
-    src  = os.path.normpath(src)
-    dest = os.path.normpath(dest)
+    def __init__(self,path):
 
-    #get all file path components
-    #because shutil copy cannot copy 
-    #a file from a folder that does not exist
-    _comps = FY_Brakeup_Path(dest)
+        FY_Path.__init__(self,path)
 
-       
-    #remove the drive letter and the file name
-    _comps = _comps[1:-1]
+    def create(self):
 
-    for _comp in reversed(_comps):
+        if not self.exists():
 
-        #if folder does not exist we create it
-        if not os.path.exists(_comp):
-            os.mkdir(_comp)
-
-    try:
-        shutil.copyfile(src, dest)
-    except:
-        raise FY_Err_Copy_File
-
-"""****************************************************************************
-*******************************************************************************
-****************************************************************************"""
-def FY_Move_File(src,dest):
-
-    source = os.path.normpath(source)
-    dest   = os.path.normpath(dest)
-   
-    try:
-        shutil.move(src, dest)
-    except:
-        raise FY_Err_Move_File
-
-"""****************************************************************************
-*******************************************************************************
-****************************************************************************"""
-def FY_Delete_File(path):
-
-    path = os.path.normpath(path)
-
-    try:
-        os.chmod(path ,stat.S_IWRITE)
-        os.remove(path)
-
-        if os.path.isfile(path):
             try:
-                os.remove(path)
+                os.makedirs(self.path)
             except:
-                raise FY_Err_Delete_File
-        
-    except:
-        raise FY_Err_Delete_File
+                raise FY_Err_Create_Dir
 
-"""****************************************************************************
-*******************************************************************************
-****************************************************************************"""
-def FY_Copy_Dir(src,dest):
+    def copy(self,dest):
 
-    src    = os.path.normpath(src)
-    dest   = os.path.normpath(dest)
+        if isinstance(dest,FY_Dir):
 
-    try:
-        shutil.copytree(src,dest)
-    except:
-        raise FY_Err_Copy_Dir
-
-"""****************************************************************************
-*******************************************************************************
-****************************************************************************"""
-def FY_Move_Dir(src,dest):
-
-    src  = os.path.normpath(src)
-    dest = os.path.normpath(dest)
-
-    try:
-        shutil.move(src, dest)
-    except:
-        raise FY_Err_Move_Dir
-
-"""****************************************************************************
-*******************************************************************************
-****************************************************************************"""
-def FY_Create_Dir(path):
-
-    path  = os.path.normpath(path)
-
-    try:
-        os.makedirs(path)
-    except:
-        raise FY_Err_Create_Dir
-
-"""****************************************************************************
-*******************************************************************************
-****************************************************************************"""
-def FY_Delete_Dir(path):
-
-    path = os.path.normpath(path)
-
-    try:
-        shutil.rmtree(path)
-    except:
-        raise FY_Err_Delete_Dir
-
-"""****************************************************************************
-*******************************************************************************
-****************************************************************************"""
-class FY_AccessRights(object):
-
-    def __init__(self,logger):
-
-        self.__logger  = logger
-
-    def set_object_owner(self,path,new_owner):
-
-        if FY_IsWindows():
-            pass
+            try:
+                shutil.copytree(self.path, dest.path)
+            except:
+                raise FY_Err_Copy_Dir
         else:
-            _cwd  = os.path.split(path)[0]
-            _proc = FY_Process(cwd=_cwd,user=None,logger=self.__logger)
-            _std_out, _std_err = _proc.call(cmd="chown %s %s" % (new_owner,path))
+            raise FY_Err_Type("Destination path should be of type FY_Dir")
 
-    def set_object_group(self,path,new_group):
+    def move(self,dest):
 
-        if FY_IsWindows():
-            pass
+        if isinstance(dest,FY_Dir):
+
+            try:
+                shutil.move(self.path, dest.path)
+            except:
+                raise FY_Err_Move_Dir
+
         else:
-            _cwd  = os.path.split(path)[0]
-            _proc = FY_Process(cwd=_cwd,user=None,logger=self.__logger)
-            _std_out, _std_err = _proc.call(cmd="chgrp %s %s" % (new_group,path))
+            raise FY_Err_Type("Destination path should be of type FY_Dir")
 
-    def set_object_mode(self,path,mode):
+    def delete(self):
 
-        if FY_IsWindows():
-            pass
+        try:
+            shutil.rmtree(path)
+        except:
+            raise FY_Err_Delete_Dir
+
+    def file(self,name):
+
+        return  FY_File(self.path).join(name)
+
+    def add(self,name):
+
+        _path = FY_Dir(self.path)
+
+        _path.join(name)
+
+        return _path
+
+    def __print(self):
+
+        _txt = "DIR: [{}]".format(self.path)
+
+        return _txt
+
+    def __str__(self):
+
+        return self.__print()
+
+    def __repr__(self):
+
+        return self.__print()
+
+"""****************************************************************************
+*******************************************************************************
+****************************************************************************"""
+class FY_File(FY_Path):
+
+    def __init__(self,path):
+
+        FY_Path.__init__(self,path)
+
+    def copy(self,dest):
+
+        if isinstance(dest,FY_File):
+
+            _comps = dest.breakup()
+
+            _comps = _comps[1:-1]
+
+            for _comp in reversed(_comps):
+
+                if not _comp.exists:
+
+                    os.mkdir(_comp)
+
+            try:
+                shutil.copyfile(self.path, dest.path)
+            except:
+                raise FY_Err_Copy_File
+
         else:
-            _cwd  = os.path.split(path)[0]
-            _proc = FY_Process(cwd=_cwd,user=None,logger=self.__logger)
-            _std_out, _std_err = _proc.call(cmd="chmod %s %s" % (mode,path))
+            raise FY_Err_Type("Destination path should be of type FY_File")
 
-    def set_object_owner_r(self,path,new_owner):
+    def move(self,dest):
 
-        if FY_IsWindows():
-            pass
+        if isinstance(dest,FY_File):       
+            try:
+                shutil.move(src, dest)
+            except:
+                raise FY_Err_Move_File
         else:
-            _cwd  = os.path.split(path)[0]
-            _proc = FY_Process(cwd=_cwd,user=None,logger=self.__logger)
-            _std_out, _std_err = _proc.call(cmd="chown -R %s %s" % (new_owner,path))
+            raise FY_Err_Type("Destination path should be of type FY_File")
 
-    def set_object_group_r(self,path,new_group):
+    def delete(self):
 
-        if FY_IsWindows():
-            pass
-        else:
-            _cwd  = os.path.split(path)[0]
-            _proc = FY_Process(cwd=_cwd,user=None,logger=self.__logger)
-            _std_out, _std_err = _proc.call(cmd="chgrp -R %s %s" % (new_group,path))
+        try:
+            os.chmod(self.path ,stat.S_IWRITE)
+            os.remove(self.path)
 
-    def set_object_mode_r(self,path,mode):
+            if os.path.isfile(path):
+                try:
+                    os.remove(path)
+                except:
+                    raise FY_Err_Delete_File
+            
+        except:
+            raise FY_Err_Delete_File
 
-        if FY_IsWindows():
-            pass
-        else:
-            _cwd  = os.path.split(path)[0]
-            _proc = FY_Process(cwd=_cwd,user=None,logger=self.__logger)
-            _std_out, _std_err = _proc.call(cmd="chmod -R %s %s" % (mode,path))
+    def touch(self):
 
-    def set_dir_ac(self,path,owner,group,mode):
+        if not self.exists():
 
-        _comps = list(os.walk(path))
+            try:
+                with open(path,'w+') as _file:
 
-        for _path, _dirs, _files in reversed(_comps):
+                    _file.write("")
+            except:
+                raise FY_Err_Touch
 
-            #for all files
-            for _file in _files:
+    def write_txt(self,data):
 
-                _file_path = os.path.join(_path,_file)
+        try:
+            with open(self.path,'w+') as _file:
 
-                self.set_object_mode(_file_path,mode)
+                _file.write(data)
+        except:
+            raise FY_Err_Write_Txt_File
 
-                self.set_object_owner(_file_path,owner)
+    def write_bin(self,data):
 
-                self.set_object_group(_file_path,group)
+        try:
+            with open(path,'wb') as _file:
 
-            #for all dirs
-            for _dir in _dirs:
+                _file.write(data)
+        except:
+            raise FY_Err_Write_Binary_File
 
-                _dir_path = os.path.join(_path,_dir)
+    def read_txt(self):
 
-                self.set_object_mode(_dir_path,mode)
+        _data = ""
 
-                self.set_object_owner(_dir_path,owner)
+        try:
+            with open(self.path,'r') as _file:
 
-                self.set_object_group(_dir_path,group)
+                _data = _file.read()
+        except:
+            raise FY_Err_Read_Txt_File
 
-    def set_dir_ac_r(self,path,owner,group,mode):
+        return _data
 
-        self.set_object_mode_r(path,cmd_owner,mode)
+    def append_txt(self,data):
 
-        self.set_object_owner_r(path,cmd_owner,owner)
+        try:
+            with open(self.path,'a') as _file:
 
-        self.set_object_group_r(path,cmd_owner,group)
+                _file.write(data)
+        except:
+            raise FY_Err_Append_To_Txt_File
 
-    def set_file_ac(self,path,owner,group,mode):
+    def read_bin(self):
 
-        self.set_object_mode(path,cmd_owner,mode)
+        _data = ""
 
-        self.set_object_owner(path,cmd_owner,owner)
+        try:
+            with open(self.path,'rb') as _file:
 
-        self.set_object_group(path,cmd_owner,group)
+                _data = _file.read()
+        except:
+            raise FY_Err_Read_Binary_File
 
-"""****************************************************************************
-*******************************************************************************
-****************************************************************************"""
-def FY_Touch(path):
+        return _data
 
-    try:
-        with open(path,'w+') as _file:
+    def dir(self):
 
-            _file.write("")
-    except:
-        raise FY_Err_Touch
+        return self.root()
 
-"""****************************************************************************
-*******************************************************************************
-****************************************************************************"""
-def FY_Write_Txt_File(path,data):
+    def size(self):
 
-    try:
-        with open(path,'w+') as _file:
+        return os.path.getsize(self.path)
 
-            _file.write(data)
-    except:
-        raise FY_Err_Write_Txt_File
+    def ext(self):
 
-"""****************************************************************************
-*******************************************************************************
-****************************************************************************"""
-def FY_Write_Binary_File(path,data):
+        return os.path.splitext(self.path)[1]
 
-    try:
-        with open(path,'wb') as _file:
+    def __print(self):
 
-            _file.write(data)
-    except:
-        raise FY_Err_Write_Binary_File
+        _txt = "FILE: [{}]".format(self.path)
 
-"""****************************************************************************
-*******************************************************************************
-****************************************************************************"""
-def FY_Read_Txt_File(path):
-    _data = ""
+        return _txt
 
-    try:
-        with open(path,'r') as _file:
+    def __str__(self):
 
-            _data = _file.read()
-    except:
-        raise FY_Err_Read_Txt_File
+        return self.__print()
 
-    return _data
+    def __repr__(self):
+
+        return self.__print()
 
 """****************************************************************************
 *******************************************************************************
 ****************************************************************************"""
-def FY_Append_To_Txt_File(path,data):
-    try:
-        with open(path,'a') as _file:
+class FY_Err_Copy_File(Exception):
+    pass
 
-            _file.write(data)
-    except:
-        raise FY_Err_Append_To_Txt_File
+class FY_Err_Move_File(Exception):
+    pass
 
-"""****************************************************************************
-*******************************************************************************
-****************************************************************************"""
-def FY_Read_Binary_File(path):
+class FY_Err_Delete_File(Exception):
+    pass
 
-    _data = ""
+class FY_Err_Copy_Dir(Exception):
+    pass 
 
-    try:
-        with open(path,'rb') as _file:
+class FY_Err_Move_Dir(Exception):
+    pass
 
-            _data = _file.read()
-    except:
-        raise FY_Err_Read_Binary_File
+class FY_Err_Delete_Dir(Exception):
+    pass
 
-    return _data
+class FY_Err_Breakeup_Path(Exception):
+    pass
+
+class FY_Err_Read_Txt_File(Exception):
+    pass
+
+class FY_Err_Write_Txt_File(Exception):
+    pass
+
+class FY_Err_Read_Binary_File(Exception):
+    pass
+
+class FY_Err_Write_Binary_File(Exception):
+    pass
+
+class FY_Err_Append_To_Txt_File(Exception):
+    pass
+
+class FY_Err_Touch(Exception):
+    pass
+
+class FY_Err_Create_Dir(Exception):
+    pass
+
+class FY_Err_Call_Process(Exception):
+    pass

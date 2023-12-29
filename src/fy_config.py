@@ -124,10 +124,11 @@ class _FY_Config_Logger(object):
 """****************************************************************************
 *******************************************************************************
 ****************************************************************************"""
-class _FY_Config_Socket(object):
+class _FY_Config_Host(object):
 
     def __init__(self):
 
+        self.name            = ""
         self.host            = "127.0.0.1"
         self.port            = "80"
         self.max_connections = "1"
@@ -135,7 +136,7 @@ class _FY_Config_Socket(object):
     def load(self,data):
 
         if 'max_connections' in data:
-            self.max_connection = int(data['max_connections'])
+            self.max_connections = int(data['max_connections'])
         else:
             raise FY_Err_Config("Missing configuration: hosts->host->socket->max_connections")
 
@@ -160,50 +161,10 @@ class _FY_Config_Socket(object):
     def __print(self):
 
         _txt = ""
-        _txt += "HOST   : %s\n" % (self.host,)
-        _txt += "PORT   : %s\n" % (self.port,)
-        _txt += "MAX CON: %s\n" % (self.max_connections,)
-
-        return _txt
-
-    def __str__(self):
-
-        return self.__print()
-
-    def __repr__(self):
-
-        return self.__print()
-
-"""****************************************************************************
-*******************************************************************************
-****************************************************************************"""
-class _FY_Config_Host(object):
-
-    def __init__(self):
-
-        self.name     = ""
-        self.socket   = _FY_Config_Socket()
-
-    def load(self,data):
-
-        if 'socket' in data.keys():
-
-            self.socket.load(data['socket'])
-
-        else:
-            raise FY_Err_Config("Missing configuration: hosts->host->socket")            
-
-    def serial(self):
-
-        return {
-                    "socket" : self.socket.serial(),
-                }
-
-    def __print(self):
-
-        _txt = ""
         _txt += "HOST NAME: %s\n" % (self.name,)
-        _txt += str(self.socket)
+        _txt += "HOST     : %s\n" % (self.host,)
+        _txt += "PORT     : %s\n" % (self.port,)
+        _txt += "MAX CON  : %s\n" % (self.max_connections,)
 
         return _txt
 

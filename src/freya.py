@@ -46,13 +46,11 @@ class Freya():
 
         self.env.lock.acquire()
 
-        self.env.logger.info("Starting Freya...")
+        self.env.logger.info("Starting Freya")
 
         self.hosts = FY_Hosts(self.env)
 
         self.hosts.start()
-
-        self.env.logger.debug("Starting Freya Control Server port [{}]".format(self.env.config.ctrl.port))
 
         _ctrl_server = FY_CtrlServer(
                                         port=self.env.config.ctrl.port,
@@ -71,7 +69,7 @@ class Freya():
 
         self.env.load()
 
-        self.env.logger.info("Stopping Freya Server...")
+        self.env.logger.info("Stopping Freya")
 
         _ctrl_client = FY_CtrlClient(
                                         port=self.env.config.ctrl.port,

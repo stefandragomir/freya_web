@@ -3,6 +3,7 @@ from fy_os             import FY_OS
 from fy_os             import FY_Thread
 from fy_types          import FY_Base_List
 from fy_socket         import FY_Socket
+from functools         import partial
 
 """****************************************************************************
 *******************************************************************************
@@ -14,14 +15,22 @@ class FY_Host():
         self.host   = host
         self.logger = logger
         self.thread = None
+        self.conn   = None
 
     def start(self):
 
         self.logger.debug("FY_Host: start [{}]".format(self.host.name))
 
+        self.conn = FY_Socket(
+                                    self.host.host,
+                                    self.host.port,
+                                    self.logger)
+
+        self.conn.open()
+
         self.thread = FY_Thread(
                                 self.host.name,
-                                self.run,
+                                partial(self.run, self.host, self.conn),
                                 self.logger)
 
         self.thread.begin()  
@@ -32,9 +41,15 @@ class FY_Host():
 
         self.thread.end()
 
-    def run(self):
+    def run(self,host,conn):
 
-        print("running host...")
+        conn.listen(max_conn=host.max_connections)
+
+        _data = conn.read(nob=1024)
+
+        _data = _data.decode("utf-8")
+
+        print(_data)
 
 """****************************************************************************
 *******************************************************************************

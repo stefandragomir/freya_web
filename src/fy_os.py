@@ -146,13 +146,13 @@ class FY_Thread(Thread):
 
         self.start()
 
-    def run(self,*args):
+    def run(self):
 
         self.logger.debug("FY_Thread: running thread: [{}]".format(self.name,))
 
         while not self.__stop_event.wait(0.1):  
 
-            self.runnable(*args)                      
+            self.runnable()                      
 
             sleep(2) 
             

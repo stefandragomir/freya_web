@@ -21,12 +21,10 @@
         "level": "debug"
     },
     "hosts": {
-        "default": {
-            "socket": {
+        "web_server": {
                 "host": "127.0.0.1",
                 "port": "80",
                 "max_connections": "1"
-            }
         }
     }
 }

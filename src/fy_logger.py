@@ -1,8 +1,8 @@
 import sys
 
-from fy_os import FY_Dir
-from fy_os import FY_File_Txt
-from fy_os import FY_OS
+from fy_fm   import FY_Dir
+from fy_fm   import FY_File_Txt
+from fy_time import FY_Time
 
 """****************************************************************************
 *******************************************************************************
@@ -49,13 +49,11 @@ class FY_Logger(object):
 
         if self.__is_log_level(level):
 
-            _log_txt = "[{}] [{}]      -> {}".format(FY_OS.timestamp_2(),level.upper(),txt)
-
-            _log_txt_console = " -> {}".format(txt,)
+            _log_txt = "[{}] [{}]      -> {}".format(FY_Time.timestamp_2(),level.upper(),txt)
 
             if self.console:
 
-                sys.stdout.write(_log_txt_console + "\n")
+                sys.stdout.write(_log_txt + "\n")
 
             self.__log_to_file(_log_txt + "\n")
 
@@ -63,7 +61,7 @@ class FY_Logger(object):
 
         if self.path.size() >= int(self.max_size):
 
-            _archive_path = self.archive.file_zip("{}.zip", FY_OS.timestamp_1())
+            _archive_path = self.archive.file_zip("{}.zip", FY_Time.timestamp_1())
 
             _archive_path.write(self.path)
 

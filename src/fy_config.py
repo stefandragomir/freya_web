@@ -135,7 +135,7 @@ class _FY_Config_Socket(object):
     def load(self,data):
 
         if 'max_connections' in data:
-            self.max_connection = data['max_connections']
+            self.max_connection = int(data['max_connections'])
         else:
             raise FY_Err_Config("Missing configuration: hosts->host->socket->max_connections")
 
@@ -145,7 +145,7 @@ class _FY_Config_Socket(object):
             raise FY_Err_Config("Missing configuration: hosts->host->socket->host")
 
         if 'port' in data:
-            self.port = data['port']
+            self.port = int(data['port'])
         else:
             raise FY_Err_Config("Missing configuration: hosts->host->socket->port")
 
@@ -253,6 +253,43 @@ class _FY_Config_Hosts(FY_Base_List):
 """****************************************************************************
 *******************************************************************************
 ****************************************************************************"""
+class _FY_Config_Ctrl(object):
+
+    def __init__(self):
+
+        self.port      = "99999"
+
+    def load(self,data):
+
+        if 'port' in data.keys():
+            self.port = int(data['port'])
+        else:
+            raise FY_Err_Config("Missing configuration: ctrl->port")
+
+    def serial(self):
+
+        return {
+                    "port"     : self.port
+                }
+
+    def __print(self):
+
+        _txt = ""
+        _txt += "PORT     : %s\n" % (self.port,)
+
+        return _txt
+
+    def __str__(self):
+
+        return self.__print()
+
+    def __repr__(self):
+
+        return self.__print()
+
+"""****************************************************************************
+*******************************************************************************
+****************************************************************************"""
 class FY_Config(object):
 
     def __init__(self,path):
@@ -261,6 +298,7 @@ class FY_Config(object):
         self.notifications   = _FY_Config_Notifications()
         self.logger          = _FY_Config_Logger()
         self.hosts           = _FY_Config_Hosts()
+        self.ctrl            = _FY_Config_Ctrl()
 
         self.hosts.add(_FY_Config_Host())
         self.hosts[-1].name = "default"
@@ -298,6 +336,17 @@ class FY_Config(object):
         else:
             raise FY_Err_Config("Missing configuration: hosts")
 
+    def __load_ctrl(self,data):
+
+        self.ctrl = _FY_Config_Ctrl()
+
+        if 'ctrl' in data.keys():
+
+            self.ctrl.load(data["ctrl"])
+
+        else:
+            raise FY_Err_Config("Missing configuration: ctrl")
+
     def load(self):
 
         _data = self.path.read()
@@ -305,6 +354,7 @@ class FY_Config(object):
         self.__load_logger(_data)
         self.__load_notifications(_data)
         self.__load_hosts(_data)
+        self.__load_ctrl(_data)
 
     def save(self):
 
@@ -312,6 +362,7 @@ class FY_Config(object):
                     "notifications": self.notifications.serial(),
                     "logger"       : self.logger.serial(),
                     "hosts"        : self.hosts.serial(),
+                    "ctrl"         : self.ctrl.serial(),
                 }
 
         self.path.write(_data)
@@ -324,6 +375,8 @@ class FY_Config(object):
         _txt += str(self.notifications)
         _txt += "---------------------------------------\n"
         _txt += str(self.logger)
+        _txt += "---------------------------------------\n"
+        _txt += str(self.rpc)
         _txt += "---------------------------------------\n"
 
         for _host in self.hosts:

@@ -1,6 +1,6 @@
 
-from fy_os     import FY_Dir
-from fy_os     import FY_File_Txt
+from fy_fm     import FY_Dir
+from fy_fm     import FY_File_Txt
 from fy_os     import FY_OS
 from fy_config import FY_Config
 from fy_logger import FY_Logger

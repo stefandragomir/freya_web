@@ -1,19 +1,20 @@
-import os
 
+from time      import sleep
 from fy_args   import FY_Arguments
-from fy_logger import FY_Logger
-from fy_config import FY_Config
-from fy_com    import FY_Com
+from fy_host   import FY_Hosts
 from fy_env    import FY_Environment
+from fy_ctrl   import FY_CtrlServer
+from fy_ctrl   import FY_CtrlClient
 
 """****************************************************************************
 *******************************************************************************
 ****************************************************************************"""
-class Freya(object):
+class Freya():
 
     def __init__(self):
 
-        self.env = FY_Environment()
+        self.env   = FY_Environment()
+        self.hosts = None
 
     def run(self):
 
@@ -45,13 +46,26 @@ class Freya(object):
 
         self.env.lock.acquire()
 
-        self.env.logger.info("Starting Freya Server...")
-        
-        _com = FY_Com(self.env)
-        
-        _com.start()
+        self.env.logger.info("Starting Freya...")
 
-        self.__env.logger.info("Done")
+        self.hosts = FY_Hosts(self.env)
+
+        self.hosts.start()
+
+        self.env.logger.debug("Starting Freya Control Server port [{}]".format(self.env.config.ctrl.port))
+
+        _ctrl_server = FY_CtrlServer(
+                                        port=self.env.config.ctrl.port,
+                                        shutdown=self.shutdown,
+                                        logger=self.env.logger)
+
+        _ctrl_server.start()
+
+        self.env.lock.release()
+
+    def shutdown(self):
+
+        self.hosts.stop()
 
     def stop(self):
 
@@ -59,17 +73,21 @@ class Freya(object):
 
         self.env.logger.info("Stopping Freya Server...")
 
-        _com = FY_Com(self.env)
-        
-        _com.stop()
+        _ctrl_client = FY_CtrlClient(
+                                        port=self.env.config.ctrl.port,
+                                        logger=self.env.logger)
 
-        self.env.lock.release()
+        _ctrl_client.connect()
+
+        _ctrl_client.shutdown()
 
         self.env.logger.info("Done")
 
     def restart(self):
 
         self.stop()
+
+        sleep(5)
 
         self.start()
 

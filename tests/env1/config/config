@@ -1,4 +1,7 @@
 {
+    "ctrl": {
+        "port":"9999"
+    },
     "notifications": {
         "host": "localhost",
         "port": "587",
